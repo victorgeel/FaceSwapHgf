@@ -686,7 +686,7 @@ with gr.Blocks(css=css) as interface:
                         )
 
                     with gr.Box(visible=True) as input_video_group:
-                        vid_widget = gr.Video if USE_COLAB else gr.Text
+                        vid_widget = gr.Video #gr.Video if USE_COLAB else gr.Text
                         video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
@@ -747,10 +747,10 @@ with gr.Blocks(css=css) as interface:
 
                 with gr.Row():
                     output_directory_button = gr.Button(
-                        "📂", interactive=False, visible=not USE_COLAB
+                        "📂", interactive=False, visible=False
                     )
                     output_video_button = gr.Button(
-                        "🎬", interactive=False, visible=not USE_COLAB
+                        "🎬", interactive=False, visible=False
                     )
 
                 with gr.Column():
