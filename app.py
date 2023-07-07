@@ -819,6 +819,6 @@ with gr.Blocks(css=css) as interface:
 
 if __name__ == "__main__":
     if USE_COLAB:
-        print("Running in colab mode")
+        print("Running in colab mode.")
 
     interface.queue(concurrency_count=2, max_size=20).launch(share=USE_COLAB)
