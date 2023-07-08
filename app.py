@@ -632,8 +632,8 @@ with gr.Blocks(css=css) as interface:
                         )
 
                     with gr.Box(visible=True) as input_video_group:
-                        vid_widget = gr.Video if USE_COLAB else gr.Text
-                        video_input = vid_widget(
+                        # vid_widget = gr.Video if USE_COLAB else gr.Text
+                        video_input = gr.Video(
                             label="Target Video Path", interactive=True
                         )
                         with gr.Accordion("✂️ Trim video", open=False):
@@ -819,6 +819,6 @@ with gr.Blocks(css=css) as interface:
 
 if __name__ == "__main__":
     if USE_COLAB:
-        print("Running in colab mode.")
+        print("Running in colab mode")
 
     interface.queue(concurrency_count=2, max_size=20).launch(share=USE_COLAB)
