@@ -667,18 +667,18 @@ with gr.Blocks(css=css) as interface:
                     input_type = gr.Radio(
                         ["Image", "Video"],
                         label="Target Type",
-                        value="Video",
+                        value="Image",
                     )
 
-                    with gr.Box(visible=False) as input_image_group:
+                    with gr.Box(visible=True) as input_image_group:
                         image_input = gr.Image(
                             label="Target Image", interactive=True, type="filepath"
                         )
 
-                    with gr.Box(visible=True) as input_video_group:
+                    with gr.Box(visible=False) as input_video_group:
                         vid_widget = gr.Video if USE_COLAB else gr.Text
                         video_input = gr.Video(
-                            label="Target Video Path", interactive=True
+                            label="Target Video", interactive=True
                         )
                         with gr.Accordion("✂️ Trim video", open=False):
                             with gr.Column():
@@ -743,13 +743,23 @@ with gr.Blocks(css=css) as interface:
                         "🎬", interactive=False, visible=False
                     )
 
-                with gr.Column():
-                    gr.Markdown(
-                        '[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/harisreedhar)'
-                    )
-                    gr.Markdown(
-                        "### [Source code](https://github.com/harisreedhar/Swap-Mukham) . [Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer) . [Gradio](https://gradio.app/)"
-                    )
+                with gr.Box():
+                    with gr.Row():
+                        gr.Markdown(
+                            "### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)"
+                        )
+                        gr.Markdown(
+                            "### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)"
+                        )
+                        gr.Markdown(
+                            "### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)"
+                        )
+                        gr.Markdown(
+                            "### [🌐 Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)"
+                        )
+                        gr.Markdown(
+                            "### [🤗 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)"
+                        )
 
     ## ------------------------------ GRADIO EVENTS ------------------------------
 
