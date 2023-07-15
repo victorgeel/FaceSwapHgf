@@ -17,12 +17,11 @@ import concurrent.futures
 from moviepy.editor import VideoFileClip
 
 from nsfw_detector import get_nsfw_detector
-from face_swapper import Inswapper, paste_to_whole
+from face_swapper import Inswapper, paste_to_whole, place_foreground_on_background
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
-from face_enhancer import load_face_enhancer_model, face_enhancer_list, gfpgan_enhance, realesrgan_enhance
+from face_enhancer import get_available_enhancer_names, load_face_enhancer_model
 from face_parsing import init_parser, swap_regions, mask_regions, mask_regions_to_list, SoftErosion
 from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_list_by_lengths, merge_img_sequence_from_ref
-
 
 ## ------------------------------ USER ARGS ------------------------------
 
@@ -69,9 +68,12 @@ FACE_ANALYSER = None
 FACE_ENHANCER = None
 FACE_PARSER = None
 NSFW_DETECTOR = None
+FACE_ENHANCER_LIST = ["NONE"]
+FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
+
 
 ## ------------------------------ SET EXECUTION PROVIDER ------------------------------
-# Note: For AMD,MAC or non CUDA users, change settings here
+# Note: Non CUDA users may change settings here
 
 PROVIDER = ["CPUExecutionProvider"]
 
@@ -88,7 +90,7 @@ else:
     print("\n********** Running on CPU **********\n")
 
 device = "cuda" if USE_CUDA else "cpu"
-
+EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
 ## ------------------------------ LOAD MODELS ------------------------------
 
@@ -223,7 +225,7 @@ def process(
             yield f"### \n 🔞 {message}", *ui_before()
             assert not nsfw, message
             return False
-        if device == "cuda": torch.cuda.empty_cache()
+        EMPTY_CACHE()
 
         yield "### \n ⌛ Analysing face data...", *ui_before()
         if condition != "Specific Face":
@@ -241,26 +243,24 @@ def process(
 
         yield "### \n ⌛ Swapping faces...", *ui_before()
         preds, aimgs, matrs = FACE_SWAPPER.batch_forward(whole_frame_list, analysed_targets, analysed_sources)
-        torch.cuda.empty_cache()
+        EMPTY_CACHE()
 
         if enable_face_parser:
             yield "### \n ⌛ Applying face-parsing mask...", *ui_before()
             for idx, (pred, aimg) in tqdm(enumerate(zip(preds, aimgs)), total=len(preds), desc="Face parsing"):
                 preds[idx] = swap_regions(pred, aimg, FACE_PARSER, smooth_mask, includes=includes, blur=int(blur_amount))
-            torch.cuda.empty_cache()
+        EMPTY_CACHE()
 
         if face_enhancer_name != "NONE":
             yield f"### \n ⌛ Enhancing faces with {face_enhancer_name}...", *ui_before()
             for idx, pred in tqdm(enumerate(preds), total=len(preds), desc=f"{face_enhancer_name}"):
-                if face_enhancer_name == 'GFPGAN':
-                    pred = gfpgan_enhance(pred, FACE_ENHANCER)
-                elif face_enhancer_name.startswith("REAL-ESRGAN"):
-                    pred = realesrgan_enhance(pred, FACE_ENHANCER)
-
+                enhancer_model, enhancer_model_runner = FACE_ENHANCER
+                pred = enhancer_model_runner(pred, enhancer_model)
                 preds[idx] = cv2.resize(pred, (512,512))
                 aimgs[idx] = cv2.resize(aimgs[idx], (512,512))
                 matrs[idx] /= 0.25
-        torch.cuda.empty_cache()
+
+        EMPTY_CACHE()
 
         split_preds = split_list_by_lengths(preds, num_faces_per_frame)
         del preds
@@ -270,19 +270,19 @@ def process(
         del matrs
 
         yield "### \n ⌛ Post-processing...", *ui_before()
-        def process_frame(frame_idx, frame_img, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
+        def post_process(frame_idx, frame_img, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
             whole_img_path = frame_img
             whole_img = cv2.imread(whole_img_path)
             for p, a, m in zip(split_preds[frame_idx], split_aimgs[frame_idx], split_matrs[frame_idx]):
                 whole_img = paste_to_whole(p, a, m, whole_img, laplacian_blend=enable_laplacian_blend, crop_mask=(crop_top, crop_bott, crop_left, crop_right))
             cv2.imwrite(whole_img_path, whole_img)
 
-        def optimize_processing(image_sequence, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
+        def concurrent_post_process(image_sequence, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = []
                 for idx, frame_img in enumerate(image_sequence):
                     future = executor.submit(
-                        process_frame,
+                        post_process,
                         idx,
                         frame_img,
                         split_preds,
@@ -302,8 +302,7 @@ def process(
                     except Exception as e:
                         print(f"An error occurred: {e}")
 
-        # Usage:
-        optimize_processing(
+        concurrent_post_process(
             image_sequence,
             split_preds,
             split_aimgs,
@@ -432,13 +431,13 @@ def update_radio(value):
 
 
 def swap_option_changed(value):
-    if value == swap_options_list[1] or value == swap_options_list[2]:
+    if value.startswith("Age"):
         return (
             gr.update(visible=True),
             gr.update(visible=False),
             gr.update(visible=True),
         )
-    elif value == swap_options_list[5]:
+    elif value == "Specific Face":
         return (
             gr.update(visible=False),
             gr.update(visible=True),
@@ -497,7 +496,7 @@ def stop_running():
     if hasattr(STREAMER, "stop"):
         STREAMER.stop()
         STREAMER = None
-    return "Cancelled"
+    yield "cancelled !"
 
 
 def slider_changed(show_frame, video_path, frame_index):
@@ -538,8 +537,10 @@ with gr.Blocks(css=css) as interface:
         with gr.Row():
             with gr.Column(scale=0.4):
                 with gr.Tab("📄 Swap Condition"):
-                    swap_option = gr.Radio(
+                    swap_option = gr.Dropdown(
                         swap_options_list,
+                        info="Choose which face or faces in the target image to swap.",
+                        multiselect=False,
                         show_label=False,
                         value=swap_options_list[0],
                         interactive=True,
@@ -636,7 +637,7 @@ with gr.Blocks(css=css) as interface:
                     )
 
                     face_enhancer_name = gr.Dropdown(
-                        face_enhancer_list, label="Face Enhancer", value="NONE", multiselect=False, interactive=True
+                        FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False, interactive=True
                     )
 
                 source_image_input = gr.Image(
@@ -675,8 +676,8 @@ with gr.Blocks(css=css) as interface:
                         )
 
                     with gr.Box(visible=True) as input_video_group:
-                        # vid_widget = gr.Video if USE_COLAB else gr.Text
-                        video_input = gr.Video(
+                        vid_widget = gr.Video if USE_COLAB else gr.Text
+                        video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
                         with gr.Accordion("✂️ Trim video", open=False):
@@ -837,7 +838,7 @@ with gr.Blocks(css=css) as interface:
     ]
 
     swap_event = swap_button.click(
-        fn=process, inputs=swap_inputs, outputs=swap_outputs, show_progress=True
+        fn=process, inputs=swap_inputs, outputs=swap_outputs, show_progress=True,
     )
 
     cancel_button.click(
