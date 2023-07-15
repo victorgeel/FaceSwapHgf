@@ -677,7 +677,7 @@ with gr.Blocks(css=css) as interface:
 
                     with gr.Box(visible=True) as input_video_group:
                         vid_widget = gr.Video if USE_COLAB else gr.Text
-                        video_input = vid_widget(
+                        video_input = gr.Video(
                             label="Target Video Path", interactive=True
                         )
                         with gr.Accordion("✂️ Trim video", open=False):
