@@ -2,7 +2,6 @@ import os
 import cv2
 import time
 import glob
-import torch
 import shutil
 import platform
 import datetime
@@ -11,7 +10,6 @@ import numpy as np
 from threading import Thread
 from moviepy.editor import VideoFileClip, ImageSequenceClip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
-from face_parsing import init_parser, swap_regions, mask_regions, mask_regions_to_list, SoftErosion
 
 
 logo_image = cv2.imread("./assets/images/logo.png", cv2.IMREAD_UNCHANGED)
@@ -69,7 +67,7 @@ def trim_video(video_path, output_path, start_frame, stop_frame):
     os.makedirs(temp_path, exist_ok=True)
     trimmed_video_file_path = os.path.join(temp_path, trimmed_video_filename)
 
-    video = VideoFileClip(video_path)
+    video = VideoFileClip(video_path, fps_source="fps")
     fps = video.fps
     start_time = start_frame / fps
     duration = (stop_frame - start_frame) / fps
@@ -174,7 +172,7 @@ def split_list_by_lengths(data, length_list):
 
 
 def merge_img_sequence_from_ref(ref_video_path, image_sequence, output_file_name):
-    video_clip = VideoFileClip(ref_video_path)
+    video_clip = VideoFileClip(ref_video_path, fps_source="fps")
     fps = video_clip.fps
     duration = video_clip.duration
     total_frames = video_clip.reader.nframes
@@ -224,12 +222,12 @@ def scale_bbox_from_center(bbox, scale_width, scale_height, image_width, image_h
     return scaled_bbox
 
 
-def laplacian_blending(A, B, m, num_levels=4):
+def laplacian_blending(A, B, m, num_levels=7):
     assert A.shape == B.shape
     assert B.shape == m.shape
     height = m.shape[0]
     width = m.shape[1]
-    size_list = np.array([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096])
+    size_list = np.array([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192])
     size = size_list[np.where(size_list > max(height, width))][0]
     GA = np.zeros((size, size, 3), dtype=np.float32)
     GA[:height, :width, :] = A
@@ -264,30 +262,42 @@ def laplacian_blending(A, B, m, num_levels=4):
     for i in range(1,num_levels):
         ls_ = cv2.pyrUp(ls_)
         ls_ = cv2.add(ls_, LS[i])
-    ls_ = np.clip(ls_[:height, :width, :], 0, 255)
-    return ls_
+    ls_ = ls_[:height, :width, :]
+    #ls_ = (ls_ - np.min(ls_)) * (255.0 / (np.max(ls_) - np.min(ls_)))
+    return ls_.clip(0, 255)
 
 
-def make_white_image(shape, crop=None, white_value=255):
-    img_white = np.full((shape[0], shape[1]), white_value, dtype=np.float32)
-    if crop is not None:
-        top = int(crop[0])
-        bottom = int(crop[1])
-        if top + bottom < shape[1]:
-            if top > 0: img_white[:top, :] = 0
-            if bottom > 0: img_white[-bottom:, :] = 0
+def mask_crop(mask, crop):
+    top, bottom, left, right = crop
+    shape = mask.shape
+    top = int(top)
+    bottom = int(bottom)
+    if top + bottom < shape[1]:
+        if top > 0: mask[:top, :] = 0
+        if bottom > 0: mask[-bottom:, :] = 0
 
-        left = int(crop[2])
-        right = int(crop[3])
-        if left + right < shape[0]:
-            if left > 0: img_white[:, :left] = 0
-            if right > 0: img_white[:, -right:] = 0
+    left = int(left)
+    right = int(right)
+    if left + right < shape[0]:
+        if left > 0: mask[:, :left] = 0
+        if right > 0: mask[:, -right:] = 0
 
-    return img_white
+    return mask
 
+def create_image_grid(images, size=128):
+    num_images = len(images)
+    num_cols = int(np.ceil(np.sqrt(num_images)))
+    num_rows = int(np.ceil(num_images / num_cols))
+    grid = np.zeros((num_rows * size, num_cols * size, 3), dtype=np.uint8)
 
-def remove_hair(img, model=None):
-    if model is None:
-        path = "./assets/pretrained_models/79999_iter.pth"
-        model = init_parser(path, mode="cuda" if torch.cuda.is_available() else "cpu")
+    for i, image in enumerate(images):
+        row_idx = (i // num_cols) * size
+        col_idx = (i % num_cols) * size
+        image = cv2.resize(image.copy(), (size,size))
+        if image.dtype != np.uint8:
+            image = (image.astype('float32') * 255).astype('uint8')
+        if image.ndim == 2:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        grid[row_idx:row_idx + size, col_idx:col_idx + size] = image
 
+    return grid
