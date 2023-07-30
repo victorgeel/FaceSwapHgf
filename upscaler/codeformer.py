@@ -11,14 +11,14 @@ import time
 
 
 class CodeFormerEnhancer:
-    def __init__(self, model_path="CodeFormer/weights/CodeFormer/codeformer.pth", device='cpu'):
+    def __init__(self, model_path="codeformer.onnx", device='cpu'):
         model = onnx.load(model_path)
         session_options = onnxruntime.SessionOptions()
         session_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
         providers = ["CPUExecutionProvider"]
         if device == 'cuda':
             providers = [("CUDAExecutionProvider", {"cudnn_conv_algo_search": "DEFAULT"}),"CPUExecutionProvider"]
-        self.session = onnxruntime.InferenceSession("codeformer.onnx", sess_options=session_options, providers=providers)
+        self.session = onnxruntime.InferenceSession(model_path, sess_options=session_options, providers=providers)
 
     def enhance(self, img, w=0.9):
         img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_LINEAR)
