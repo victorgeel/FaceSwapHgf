@@ -5,7 +5,7 @@ import onnxruntime
 import numpy as np
 from tqdm import tqdm
 
-# https://github.com/yahoo/open_nsfw
+# https://github.com/chemistzombie/stable-diffusion-unfiltered.git
 
 class NSFWChecker:
     def __init__(self, model_path=None, providers=["CPUExecutionProvider"]):
@@ -33,5 +33,5 @@ class NSFWChecker:
 
             if score > threshold:
                 print(f"Detected nsfw score:{score}")
-                return True
+                return False
         return False
