@@ -69,7 +69,6 @@ FACE_SWAPPER = None
 FACE_ANALYSER = None
 FACE_ENHANCER = None
 FACE_PARSER = None
-NSFW_DETECTOR = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 FACE_ENHANCER_LIST.extend(cv2_interpolations)
@@ -116,11 +115,6 @@ def load_face_parser_model(path="./assets/pretrained_models/79999_iter.pth"):
     global FACE_PARSER
     if FACE_PARSER is None:
         FACE_PARSER = init_parsing_model(path, device=device)
-
-def load_nsfw_detector_model(path="./assets/pretrained_models/open-nsfw.onnx"):
-    global NSFW_DETECTOR
-    if NSFW_DETECTOR is None:
-        NSFW_DETECTOR = NSFWChecker(model_path=path, providers=PROVIDER)
 
 
 load_face_analyser_model()
@@ -226,17 +220,7 @@ def process(
     def swap_process(image_sequence):
         ## ------------------------------ CONTENT CHECK ------------------------------
 
-        yield "### \n ⌛ Checking contents...", *ui_before()
-        nsfw = NSFW_DETECTOR.is_nsfw(image_sequence)
-        if nsfw:
-            message = "NSFW Content detected !!!"
-            yield f"### \n 🔞 {message}", *ui_before()
-            assert not nsfw, message
-            return True
-        EMPTY_CACHE()
-
-        ## ------------------------------ ANALYSE FACE ------------------------------
-
+    
         yield "### \n ⌛ Analysing face data...", *ui_before()
         if condition != "Specific Face":
             source_data = source_path, age
