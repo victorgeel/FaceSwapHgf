@@ -1,6 +1,6 @@
 ---
-title: Swap Mukham
-emoji: 💻
+title: Face-Swap BypassNSFW 
+emoji: 👍
 colorFrom: purple
 colorTo: gray
 sdk: gradio
