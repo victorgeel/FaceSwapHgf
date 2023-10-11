@@ -18,7 +18,6 @@ from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
 
-from nsfw_checker import NSFWChecker
 from face_swapper import Inswapper, paste_to_whole
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
 from face_parsing import init_parsing_model, get_parsed_mask, mask_regions, mask_regions_to_list
