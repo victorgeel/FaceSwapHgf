@@ -193,8 +193,7 @@ def process(
 
     ## ------------------------------ PREPARE INPUTS & LOAD MODELS ------------------------------
 
-    yield "### \n ⌛ Loading NSFW detector model...", *ui_before()
-    load_nsfw_detector_model()
+    
 
     yield "### \n ⌛ Loading face analyser model...", *ui_before()
     load_face_analyser_model()
@@ -233,7 +232,7 @@ def process(
             message = "NSFW Content detected !!!"
             yield f"### \n 🔞 {message}", *ui_before()
             assert not nsfw, message
-            return False
+            return True
         EMPTY_CACHE()
 
         ## ------------------------------ ANALYSE FACE ------------------------------
