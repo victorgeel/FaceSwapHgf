@@ -543,7 +543,7 @@ footer{display:none !important}
 """
 
 with gr.Blocks(css=css) as interface:
-    gr.Markdown("# 🗿 Swap Mukham")
+    gr.Markdown("# 🎭 Swapper")
     gr.Markdown("### Face swap app based on insightface inswapper.")
     with gr.Row():
         with gr.Row():
@@ -561,7 +561,7 @@ with gr.Blocks(css=css) as interface:
                         value=25, label="Value", interactive=True, visible=False
                     )
 
-                with gr.Tab("🎚️ Detection Settings"):
+                with gr.Tab("💉 Detection Settings"):
                     detect_condition_dropdown = gr.Dropdown(
                         detect_conditions,
                         label="Condition",
@@ -579,7 +579,7 @@ with gr.Blocks(css=css) as interface:
                     )
                     apply_detection_settings = gr.Button("Apply settings")
 
-                with gr.Tab("📤 Output Settings"):
+                with gr.Tab("🔧 Output Settings"):
                     output_directory = gr.Text(
                         label="Output Directory",
                         value=DEF_OUTPUT_PATH,
@@ -592,7 +592,7 @@ with gr.Blocks(css=css) as interface:
                         label="Keep output sequence", value=False, interactive=True
                     )
 
-                with gr.Tab("🪄 Other Settings"):
+                with gr.Tab("🎨 Other Settings"):
                     face_scale = gr.Slider(
                         label="Face Scale",
                         minimum=0,
@@ -707,7 +707,7 @@ with gr.Blocks(css=css) as interface:
                         video_input = gr.Video(
                             label="Target Video", interactive=True
                         )
-                        with gr.Accordion("✂️ Trim video", open=False):
+                        with gr.Accordion("🪚 Trim video", open=False):
                             with gr.Column():
                                 with gr.Row():
                                     set_slider_range_btn = gr.Button(
@@ -754,7 +754,7 @@ with gr.Blocks(css=css) as interface:
                 info = gr.Markdown(value="...")
 
                 with gr.Row():
-                    swap_button = gr.Button("✨ Swap", variant="primary")
+                    swap_button = gr.Button("🎯 Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel")
 
                 preview_image = gr.Image(label="Output", interactive=False)
@@ -767,26 +767,11 @@ with gr.Blocks(css=css) as interface:
                         "📂", interactive=False, visible=False
                     )
                     output_video_button = gr.Button(
-                        "🎬", interactive=False, visible=False
+                        "📺", interactive=False, visible=False
                     )
 
-                with gr.Box():
-                    with gr.Row():
-                        gr.Markdown(
-                            "### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)"
-                        )
-                        gr.Markdown(
-                            "### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)"
-                        )
-                        gr.Markdown(
-                            "### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)"
-                        )
-                        gr.Markdown(
-                            "### [🌐 Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)"
-                        )
-                        gr.Markdown(
-                            "### [🤗 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)"
-                        )
+                
+      
 
     ## ------------------------------ GRADIO EVENTS ------------------------------
 
