@@ -5,17 +5,17 @@ gradio
 insightface==0.7.3
 moviepy>=1.0.3
 numpy==1.24.3
-onnx==1.14.0
+onnx==1.16.0
 onnxruntime==1.15.1; python_version != '3.9' and sys_platform == 'darwin' and platform_machine != 'arm64'
 onnxruntime-coreml==1.13.1; python_version == '3.9' and sys_platform == 'darwin' and platform_machine != 'arm64'
 onnxruntime-gpu==1.15.1; sys_platform != 'darwin'
 onnxruntime-silicon==1.13.1; sys_platform == 'darwin' and platform_machine == 'arm64'
-opencv-python==4.8.0.74
+opencv-python==4.8.1.78
 opennsfw2==0.10.2
-pillow==10.0.0
+pillow==10.3.0
 protobuf==4.23.4
 psutil==5.9.5
 realesrgan==0.3.0
 tensorflow==2.13.0
-tqdm==4.65.0
+tqdm==4.66.3
 
